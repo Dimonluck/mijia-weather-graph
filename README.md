@@ -1,6 +1,6 @@
 # 📊 Визуализатор данных с датчика Xiaomi Mijia LYWSD03MMC
 
-![[graph_screenshot.png]]
+![Пример графика](graph_screenshot.png)
 
 Простое веб-приложение для построения графика температуры и влажности на основе данных, выгруженных с датчика **Xiaomi Mijia LYWSD03MMC** через оригинальный инструмент [ATC_MiThermometer](https://pvvx.github.io/ATC_MiThermometer/).
 

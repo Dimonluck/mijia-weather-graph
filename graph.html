@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>График температуры и влажности</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 10px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-size: 16px; /* базовый размер */
+        }
+        .container {
+            flex: 1;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+        }
+        h2 {
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .controls {
+            margin-bottom: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+        .controls textarea {
+            flex: 1;
+            min-width: 200px;
+            height: 80px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 6px;
+        }
+        .controls button {
+            padding: 6px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .controls button:hover {
+            background: #0056b3;
+        }
+        #info {
+            font-size: 14px;
+            color: #555;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        #div_v {
+            flex: 1;
+            width: 100%;
+            min-height: 500px;
+            height: calc(100vh - 200px);
+            position: relative;
+            overflow: visible;
+        }
+
+        /* --- Стили для легенды (внизу по центру) --- */
+        #labdiv {
+            margin-top: 10px;
+            text-align: center;
+            font-size: 16px;
+        }
+        .dygraph-legend {
+            position: static !important;  /* убираем абсолютное позиционирование */
+            display: inline-block;
+            background: transparent !important;
+            border: none;
+            padding: 0 !important;
+            font-size: 16px !important;
+        }
+        .dygraph-legend > span {
+            margin-right: 15px !important;  /* расстояние между T и H */
+            white-space: nowrap;
+        }
+        .dygraph-legend-line {
+            display: inline-block;
+            width: 25px !important;
+            height: 2px !important;
+            margin-right: 5px !important;
+            vertical-align: middle;
+            border-bottom: 2px solid;  /* цвет задаётся через style */
+        }
+
+        /* Центрирование подписи оси X */
+        .dygraph-label.dygraph-xlabel {
+            position: absolute !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            text-align: center;
+            width: auto !important;
+        }
+
+        /* Роллер в правом нижнем углу */
+        .dygraph-roller {
+            position: absolute !important;
+            bottom: 10px !important;
+            right: 10px !important;
+            top: auto !important;
+            left: auto !important;
+            z-index: 10;
+        }
+
+        /* Прижимаем подписи осей */
+        .dygraph-label.dygraph-ylabel {
+            left: 5px !important;
+            text-align: left !important;
+        }
+        .dygraph-label.dygraph-y2label {
+            right: 5px !important;
+            text-align: right !important;
+        }
+        .dygraph-axis-label-y {
+            padding-left: 2px !important;
+        }
+        .dygraph-axis-label-y2 {
+            padding-right: 2px !important;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Температура и влажность</h2>
+    <div class="controls">
+        <textarea id="csvInput" spellcheck="false">
+Time-Data:(A2/86400000)+25569;T1;T2;H1;H2
+1784246274891;14.4;15.6;45;59
+1784249874891;15.5;15.8;45;46
+1784253474891;15.7;16.4;46;48
+        </textarea>
+        <button id="btnUpdate">Обновить</button>
+        <span id="info">Загружено 3 образца.</span>
+    </div>
+    <div id="div_v"></div>
+    <div id="labdiv"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"></script>
+
+<script>
+    (function() {
+        const divGraph = document.getElementById('div_v');
+        const infoSpan = document.getElementById('info');
+        const csvInput = document.getElementById('csvInput');
+        const btnUpdate = document.getElementById('btnUpdate');
+        const labDiv = document.getElementById('labdiv');
+
+        let graphInstance = null;
+
+        function parseCSV(csvText) {
+            const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
+            if (lines.length === 0) return [];
+
+            const result = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(';');
+                if (cols.length < 5) continue;
+
+                const timestamp = parseInt(cols[0], 10);
+                if (isNaN(timestamp)) continue;
+
+                const t1 = parseFloat(cols[1]);
+                const t2 = parseFloat(cols[2]);
+                const h1 = parseFloat(cols[3]);
+                const h2 = parseFloat(cols[4]);
+
+                if (isNaN(t1) || isNaN(t2) || isNaN(h1) || isNaN(h2)) continue;
+
+                const tempLow = Math.min(t1, t2);
+                const tempHigh = Math.max(t1, t2);
+                const tempMid = (t1 + t2) / 2;
+
+                const humLow = Math.min(h1, h2);
+                const humHigh = Math.max(h1, h2);
+                const humMid = (h1 + h2) / 2;
+
+                result.push([
+                    new Date(timestamp),
+                    [tempLow, tempMid, tempHigh],
+                    [humLow, humMid, humHigh]
+                ]);
+            }
+            return result;
+        }
+
+        function renderGraph(data) {
+            if (!data || data.length === 0) {
+                infoSpan.textContent = 'Нет данных.';
+                if (graphInstance) {
+                    graphInstance.destroy();
+                    graphInstance = null;
+                }
+                labDiv.innerHTML = '';
+                return;
+            }
+
+            infoSpan.textContent = 'Загружено ' + data.length + ' образцов.';
+
+            if (graphInstance) {
+                graphInstance.updateOptions({ file: data });
+            } else {
+                graphInstance = new Dygraph(
+                    divGraph,
+                    data,
+                    {
+                        title: 'Температура и влажность',
+                        ylabel: 'Temp(C°)',
+                        y2label: 'H(%)',
+                        xlabel: 'Дата',
+                        showRangeSelector: true,
+                        showRoller: true,
+                        rollPeriod: 1,
+                        colors: ['green', 'blue'],
+                        series: { 'H(%)': { axis: 'y2' } },
+                        labels: ['Date', 'T(°C)', 'H(%)'],
+                        labelsDiv: labDiv,   // легенда будет в этом div
+                        legend: 'always',
+                        customBars: true,
+                        digitsAfterDecimal: 2,
+                        axisLineWidth: 0.5,
+                        gridLineWidth: 0.3,
+                        yLabelWidth: 30,
+                        rightGap: 30,
+                        titleHeight: 28,
+                        xLabelHeight: 18,
+                        axisLabelFontSize: 12,
+                        axes: {
+                            y: { axisLabelWidth: 25 },
+                            y2: { axisLabelWidth: 25 }
+                        }
+                    }
+                );
+            }
+        }
+
+        function updateFromInput() {
+            const csv = csvInput.value;
+            const parsed = parseCSV(csv);
+            renderGraph(parsed);
+        }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            updateFromInput();
+            btnUpdate.addEventListener('click', updateFromInput);
+        });
+
+        let resizeTimer;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function() {
+                if (graphInstance) {
+                    graphInstance.resize();
+                }
+            }, 100);
+        });
+
+    })();
+</script>
+</body>
+</html>

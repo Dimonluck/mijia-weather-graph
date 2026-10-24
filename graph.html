@@ -5,145 +5,159 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>График температуры и влажности</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-            padding: 10px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            font-size: 16px; /* базовый размер */
+            font-family: Arial, sans-serif; background: #f5f5f5; padding: 10px;
+            min-height: 100vh; display: flex; flex-direction: column; font-size: 16px;
         }
         .container {
-            flex: 1;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            max-width: 100%;
+            flex: 1; background: white; padding: 15px; border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex;
+            flex-direction: column; max-width: 100%;
         }
-        h2 {
-            margin-bottom: 10px;
-            font-size: 24px;
-        }
+        h2 { margin-bottom: 10px; font-size: 24px; }
         .controls {
-            margin-bottom: 10px;
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
+            margin-bottom: 10px; display: flex; flex-wrap: wrap;
+            align-items: center; gap: 10px;
         }
         .controls textarea {
-            flex: 1;
-            min-width: 200px;
-            height: 80px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 6px;
+            flex: 1; min-width: 200px; height: 80px;
+            font-family: 'Courier New', monospace; font-size: 13px;
+            border: 1px solid #ccc; border-radius: 4px; padding: 6px;
         }
         .controls button {
-            padding: 6px 16px;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            white-space: nowrap;
+            padding: 6px 16px; background: #007bff; color: white; border: none;
+            border-radius: 4px; cursor: pointer; font-size: 14px; white-space: nowrap;
         }
-        .controls button:hover {
-            background: #0056b3;
+        .controls button:hover { background: #0056b3; }
+        #info { font-size: 14px; color: #555; margin-left: 10px; white-space: nowrap; }
+
+        .tz-controls {
+            display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px;
+            margin-bottom: 12px; padding: 12px; background: #f8f9fa;
+            border-radius: 6px; border: 1px solid #e0e0e0;
         }
-        #info {
-            font-size: 14px;
-            color: #555;
-            margin-left: 10px;
-            white-space: nowrap;
+        .tz-controls label {
+            display: flex; flex-direction: column; gap: 4px;
+            font-size: 14px; color: #333; font-weight: 600;
         }
+        .tz-controls select {
+            padding: 6px 10px; font-size: 14px; border: 1px solid #ccc;
+            border-radius: 4px; background: white; min-width: 280px;
+            cursor: pointer; font-family: inherit; font-weight: normal;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+        .tz-controls select.required-empty {
+            border-color: #dc3545; background-color: #fff5f5;
+        }
+        .tz-hint {
+            margin-left: auto; font-size: 13px; color: #666;
+            align-self: center; font-style: italic;
+        }
+        .tz-hint strong { color: #333; }
+
+        .series-toggles {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 20px;
+            margin-bottom: 12px; padding: 10px 14px; background: #f8f9fa;
+            border-radius: 6px; border: 1px solid #e0e0e0;
+        }
+        .toggles-label { font-size: 14px; color: #333; font-weight: 600; }
+        .series-toggle {
+            display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+            font-size: 14px; user-select: none; padding: 4px 10px; border-radius: 4px;
+            transition: background-color 0.15s;
+        }
+        .series-toggle:hover { background: #eef0f3; }
+        .series-toggle input[type="checkbox"] {
+            width: 16px; height: 16px; cursor: pointer; margin: 0;
+        }
+        .series-toggle .color-swatch {
+            display: inline-block; width: 22px; height: 3px; border-radius: 2px;
+        }
+        .series-toggle.temp .color-swatch { background: green; }
+        .series-toggle.hum  .color-swatch { background: blue; }
+
         #div_v {
-            flex: 1;
-            width: 100%;
-            min-height: 500px;
-            height: calc(100vh - 200px);
-            position: relative;
-            overflow: visible;
+            flex: 1; width: 100%; min-height: 400px;
+            height: calc(100vh - 480px); position: relative; overflow: visible;
         }
 
-        /* --- Стили для легенды (внизу по центру) --- */
-        #labdiv {
-            margin-top: 10px;
-            text-align: center;
-            font-size: 16px;
+        .graph-placeholder {
+            width: 100%; height: 100%; min-height: 400px;
+            display: flex; align-items: center; justify-content: center;
+            color: #888; font-style: italic; text-align: center; padding: 40px;
+            background: repeating-linear-gradient(45deg, #fafafa, #fafafa 10px, #f0f0f0 10px, #f0f0f0 20px);
+            border: 2px dashed #ddd; border-radius: 8px; font-size: 15px;
         }
+
+        #labdiv { margin-top: 10px; text-align: center; font-size: 16px; }
         .dygraph-legend {
-            position: static !important;  /* убираем абсолютное позиционирование */
-            display: inline-block;
-            background: transparent !important;
-            border: none;
-            padding: 0 !important;
+            position: static !important; display: inline-block;
+            background: transparent !important; border: none; padding: 0 !important;
             font-size: 16px !important;
         }
-        .dygraph-legend > span {
-            margin-right: 15px !important;  /* расстояние между T и H */
-            white-space: nowrap;
-        }
+        .dygraph-legend > span { margin-right: 15px !important; white-space: nowrap; }
         .dygraph-legend-line {
-            display: inline-block;
-            width: 25px !important;
-            height: 2px !important;
-            margin-right: 5px !important;
-            vertical-align: middle;
-            border-bottom: 2px solid;  /* цвет задаётся через style */
+            display: inline-block; width: 25px !important; height: 2px !important;
+            margin-right: 5px !important; vertical-align: middle; border-bottom: 2px solid;
         }
-
-        /* Центрирование подписи оси X */
         .dygraph-label.dygraph-xlabel {
-            position: absolute !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            text-align: center;
-            width: auto !important;
+            position: absolute !important; left: 50% !important;
+            transform: translateX(-50%) !important; text-align: center; width: auto !important;
         }
-
-        /* Роллер в правом нижнем углу */
         .dygraph-roller {
-            position: absolute !important;
-            bottom: 10px !important;
-            right: 10px !important;
-            top: auto !important;
-            left: auto !important;
-            z-index: 10;
+            position: absolute !important; bottom: 10px !important; right: 10px !important;
+            top: auto !important; left: auto !important; z-index: 10;
+        }
+        .dygraph-label.dygraph-ylabel  { left: 5px !important; text-align: left !important; }
+        .dygraph-label.dygraph-y2label { right: 5px !important; text-align: right !important; }
+        .dygraph-axis-label-y  { padding-left: 2px !important; }
+        .dygraph-axis-label-y2 { padding-right: 2px !important; }
+
+        /* --- Блок экспорта --- */
+        .report-section {
+            margin-top: 16px; padding: 16px; background: #f8f9fa;
+            border-radius: 8px; border: 1px solid #e0e0e0;
+        }
+        .report-section h3 { margin-bottom: 12px; font-size: 16px; color: #333; }
+        .report-fields {
+            display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;
+        }
+        .report-fields label {
+            display: flex; flex-direction: column; gap: 4px;
+            font-size: 13px; color: #444; font-weight: 600;
+        }
+        .report-fields input,
+        .report-fields textarea {
+            padding: 6px 10px; font-size: 14px; border: 1px solid #ccc;
+            border-radius: 4px; font-family: inherit; font-weight: normal;
+        }
+        .report-fields textarea { resize: vertical; min-height: 40px; }
+        .report-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .report-buttons button {
+            padding: 8px 18px; font-size: 14px; border: none;
+            border-radius: 4px; cursor: pointer; color: white;
+            transition: background-color 0.15s;
+        }
+        .report-buttons .btn-primary { background: #4CAF50; }
+        .report-buttons .btn-primary:hover { background: #388E3C; }
+        .report-buttons .btn-secondary { background: #607D8B; }
+        .report-buttons .btn-secondary:hover { background: #455A64; }
+        .report-buttons button:disabled {
+            opacity: 0.5; cursor: not-allowed; background: #999 !important;
         }
 
-        /* Прижимаем подписи осей */
-        .dygraph-label.dygraph-ylabel {
-            left: 5px !important;
-            text-align: left !important;
-        }
-        .dygraph-label.dygraph-y2label {
-            right: 5px !important;
-            text-align: right !important;
-        }
-        .dygraph-axis-label-y {
-            padding-left: 2px !important;
-        }
-        .dygraph-axis-label-y2 {
-            padding-right: 2px !important;
+        @media (max-width: 700px) {
+            .tz-controls { flex-direction: column; align-items: stretch; }
+            .tz-controls select { min-width: 0; width: 100%; }
+            .tz-hint { margin-left: 0; }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <h2>Температура и влажность</h2>
+
     <div class="controls">
         <textarea id="csvInput" spellcheck="false">
 Time-Data:(A2/86400000)+25569;T1;T2;H1;H2
@@ -152,129 +166,586 @@ Time-Data:(A2/86400000)+25569;T1;T2;H1;H2
 1784253474891;15.7;16.4;46;48
         </textarea>
         <button id="btnUpdate">Обновить</button>
-        <span id="info">Загружено 3 образца.</span>
+        <span id="info">Выберите оба часовых пояса для построения графика.</span>
     </div>
+
+    <div class="tz-controls">
+        <label>
+            Часовой пояс в данных *
+            <select id="inputTz" required>
+                <option value="">— выберите —</option>
+            </select>
+        </label>
+        <label>
+            Часовой пояс сбора данных *
+            <select id="collectionTz" required>
+                <option value="">— выберите —</option>
+            </select>
+        </label>
+        <div class="tz-hint">
+            Ваш браузер: <strong id="browserTzHint">—</strong>
+        </div>
+    </div>
+
+    <div class="series-toggles">
+        <span class="toggles-label">Отображать:</span>
+        <label class="series-toggle temp">
+            <input type="checkbox" id="toggleTemp" checked>
+            <span class="color-swatch"></span>
+            <span>Температура</span>
+        </label>
+        <label class="series-toggle hum">
+            <input type="checkbox" id="toggleHum" checked>
+            <span class="color-swatch"></span>
+            <span>Влажность</span>
+        </label>
+    </div>
+
     <div id="div_v"></div>
     <div id="labdiv"></div>
+
+    <div class="report-section">
+        <h3>📄 Экспорт отчёта</h3>
+        <div class="report-fields">
+            <label>
+                Заголовок отчёта
+                <input type="text" id="reportTitle" value="Метеорологический отчёт">
+            </label>
+            <label>
+                Примечание (необязательно)
+                <textarea id="reportNotes" rows="2" placeholder="Например: датчик установлен в теплице"></textarea>
+            </label>
+        </div>
+        <div class="report-buttons">
+            <button id="btnExportReport" class="btn-primary" disabled>
+                📄 Скачать HTML-отчёт
+            </button>
+            <button id="btnExportCsv" class="btn-secondary" disabled>
+                📊 Скачать CSV (текущий вид)
+            </button>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"></script>
 
 <script>
     (function() {
-        const divGraph = document.getElementById('div_v');
-        const infoSpan = document.getElementById('info');
-        const csvInput = document.getElementById('csvInput');
-        const btnUpdate = document.getElementById('btnUpdate');
-        const labDiv = document.getElementById('labdiv');
+        'use strict';
+
+        const TIMEZONES = [
+            { value: -12,   label: 'UTC−12:00 (Baker Island)' },
+            { value: -11,   label: 'UTC−11:00 (American Samoa)' },
+            { value: -10,   label: 'UTC−10:00 (Hawaii)' },
+            { value: -9.5,  label: 'UTC−09:30 (Marquesas Islands)' },
+            { value: -9,    label: 'UTC−09:00 (Alaska)' },
+            { value: -8,    label: 'UTC−08:00 (Pacific Time, USA)' },
+            { value: -7,    label: 'UTC−07:00 (Mountain Time, USA)' },
+            { value: -6,    label: 'UTC−06:00 (Central Time, USA)' },
+            { value: -5,    label: 'UTC−05:00 (Eastern Time, USA)' },
+            { value: -4,    label: 'UTC−04:00 (Atlantic Time)' },
+            { value: -3.5,  label: 'UTC−03:30 (Newfoundland)' },
+            { value: -3,    label: 'UTC−03:00 (Argentina, Brazil)' },
+            { value: -2,    label: 'UTC−02:00 (South Georgia)' },
+            { value: -1,    label: 'UTC−01:00 (Azores)' },
+            { value: 0,     label: 'UTC±00:00 (GMT, London)' },
+            { value: 1,     label: 'UTC+01:00 (Central Europe, Berlin)' },
+            { value: 2,     label: 'UTC+02:00 (Eastern Europe, Kyiv)' },
+            { value: 3,     label: 'UTC+03:00 (Moscow, MSK)' },
+            { value: 3.5,   label: 'UTC+03:30 (Iran)' },
+            { value: 4,     label: 'UTC+04:00 (Gulf, Dubai)' },
+            { value: 4.5,   label: 'UTC+04:30 (Afghanistan)' },
+            { value: 5,     label: 'UTC+05:00 (Pakistan, Tashkent)' },
+            { value: 5.5,   label: 'UTC+05:30 (India)' },
+            { value: 5.75,  label: 'UTC+05:45 (Nepal)' },
+            { value: 6,     label: 'UTC+06:00 (Kyrgyzstan, Bangladesh)' },
+            { value: 6.5,   label: 'UTC+06:30 (Myanmar)' },
+            { value: 7,     label: 'UTC+07:00 (Thailand, Vietnam)' },
+            { value: 8,     label: 'UTC+08:00 (China, Singapore)' },
+            { value: 8.75,  label: 'UTC+08:45 (Eucla)' },
+            { value: 9,     label: 'UTC+09:00 (Japan, Korea)' },
+            { value: 9.5,   label: 'UTC+09:30 (Australia Central)' },
+            { value: 10,    label: 'UTC+10:00 (Australia Eastern)' },
+            { value: 10.5,  label: 'UTC+10:30 (Lord Howe Island)' },
+            { value: 11,    label: 'UTC+11:00 (Solomon Islands)' },
+            { value: 12,    label: 'UTC+12:00 (New Zealand)' },
+            { value: 12.75, label: 'UTC+12:45 (Chatham Islands)' },
+            { value: 13,    label: 'UTC+13:00 (Tonga)' },
+            { value: 14,    label: 'UTC+14:00 (Kiribati)' }
+        ];
+
+        const divGraph           = document.getElementById('div_v');
+        const infoSpan           = document.getElementById('info');
+        const csvInput           = document.getElementById('csvInput');
+        const btnUpdate          = document.getElementById('btnUpdate');
+        const labDiv             = document.getElementById('labdiv');
+        const inputTzSelect      = document.getElementById('inputTz');
+        const collectionTzSelect = document.getElementById('collectionTz');
+        const browserTzHint      = document.getElementById('browserTzHint');
+        const toggleTemp         = document.getElementById('toggleTemp');
+        const toggleHum          = document.getElementById('toggleHum');
+        const reportTitleInput   = document.getElementById('reportTitle');
+        const reportNotesInput   = document.getElementById('reportNotes');
+        const btnExportReport    = document.getElementById('btnExportReport');
+        const btnExportCsv       = document.getElementById('btnExportCsv');
 
         let graphInstance = null;
+        let lastData = null;
+        let lastReportConfig = null; // { rawCSV, inputOffset, collectionOffset, collectionLabel }
 
-        function parseCSV(csvText) {
+        function populateTimezones() {
+            TIMEZONES.forEach(tz => {
+                inputTzSelect.add(new Option(tz.label, String(tz.value)));
+                collectionTzSelect.add(new Option(tz.label, String(tz.value)));
+            });
+        }
+        function getBrowserOffsetHours() { return -new Date().getTimezoneOffset() / 60; }
+        function formatOffset(offset) {
+            const sign = offset >= 0 ? '+' : '−';
+            const abs = Math.abs(offset);
+            const hh = Math.floor(abs);
+            const mm = Math.round((abs - hh) * 60);
+            return 'UTC' + sign + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+        }
+        function showBrowserHint() {
+            const browserOffset = getBrowserOffsetHours();
+            const matching = TIMEZONES.find(tz => tz.value === browserOffset);
+            browserTzHint.textContent = matching
+                ? formatOffset(browserOffset) + ' — ' + matching.label.replace(/^UTC[^\s]*\s*/, '')
+                : formatOffset(browserOffset);
+        }
+        function validateTimezones() {
+            const inputEmpty      = inputTzSelect.value === '';
+            const collectionEmpty = collectionTzSelect.value === '';
+            inputTzSelect.classList.toggle('required-empty', inputEmpty);
+            collectionTzSelect.classList.toggle('required-empty', collectionEmpty);
+            return !inputEmpty && !collectionEmpty;
+        }
+        function setExportButtonsEnabled(enabled) {
+            btnExportReport.disabled = !enabled;
+            btnExportCsv.disabled    = !enabled;
+        }
+        function showPlaceholder(message) {
+            if (graphInstance) { graphInstance.destroy(); graphInstance = null; }
+            labDiv.innerHTML = '';
+            divGraph.innerHTML = '';
+            const ph = document.createElement('div');
+            ph.className = 'graph-placeholder';
+            ph.textContent = message;
+            divGraph.appendChild(ph);
+            infoSpan.textContent = message;
+            lastData = null;
+            lastReportConfig = null;
+            setExportButtonsEnabled(false);
+        }
+        function clearPlaceholder() {
+            const ph = divGraph.querySelector('.graph-placeholder');
+            if (ph) ph.remove();
+        }
+        function parseCSV(csvText, inputOffset, collectionOffset) {
             const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== '');
-            if (lines.length === 0) return [];
-
+            if (lines.length < 2) return [];
+            const H = 3600000;
+            const browserOffset = getBrowserOffsetHours();
+            const shiftMs = (collectionOffset - inputOffset - browserOffset) * H;
             const result = [];
             for (let i = 1; i < lines.length; i++) {
                 const cols = lines[i].split(';');
                 if (cols.length < 5) continue;
-
-                const timestamp = parseInt(cols[0], 10);
-                if (isNaN(timestamp)) continue;
-
-                const t1 = parseFloat(cols[1]);
-                const t2 = parseFloat(cols[2]);
-                const h1 = parseFloat(cols[3]);
-                const h2 = parseFloat(cols[4]);
-
+                const rawMs = parseInt(cols[0], 10);
+                if (isNaN(rawMs)) continue;
+                const t1 = parseFloat(cols[1]), t2 = parseFloat(cols[2]);
+                const h1 = parseFloat(cols[3]), h2 = parseFloat(cols[4]);
                 if (isNaN(t1) || isNaN(t2) || isNaN(h1) || isNaN(h2)) continue;
-
-                const tempLow = Math.min(t1, t2);
-                const tempHigh = Math.max(t1, t2);
-                const tempMid = (t1 + t2) / 2;
-
-                const humLow = Math.min(h1, h2);
-                const humHigh = Math.max(h1, h2);
-                const humMid = (h1 + h2) / 2;
-
-                result.push([
-                    new Date(timestamp),
-                    [tempLow, tempMid, tempHigh],
-                    [humLow, humMid, humHigh]
-                ]);
+                const correctedMs = rawMs + shiftMs;
+                const tempLow = Math.min(t1, t2), tempHigh = Math.max(t1, t2), tempMid = (t1 + t2) / 2;
+                const humLow  = Math.min(h1, h2), humHigh  = Math.max(h1, h2), humMid  = (h1 + h2) / 2;
+                result.push([new Date(correctedMs), [tempLow, tempMid, tempHigh], [humLow, humMid, humHigh]]);
             }
             return result;
         }
-
-        function renderGraph(data) {
-            if (!data || data.length === 0) {
-                infoSpan.textContent = 'Нет данных.';
-                if (graphInstance) {
-                    graphInstance.destroy();
-                    graphInstance = null;
-                }
-                labDiv.innerHTML = '';
-                return;
+        function applyVisibility() {
+            if (!graphInstance) return;
+            const vis = [toggleTemp.checked, toggleHum.checked];
+            if (!vis[0] && !vis[1]) {
+                if (document.activeElement === toggleTemp) toggleTemp.checked = true;
+                else toggleHum.checked = true;
+                vis[0] = toggleTemp.checked; vis[1] = toggleHum.checked;
             }
-
-            infoSpan.textContent = 'Загружено ' + data.length + ' образцов.';
+            graphInstance.setVisibility(0, vis[0]);
+            graphInstance.setVisibility(1, vis[1]);
+        }
+        function renderGraph(data, inputOffset, collectionOffset, collectionLabel) {
+            if (!data || data.length === 0) { showPlaceholder('Нет данных для отображения.'); return; }
+            const sameZone = (inputOffset === collectionOffset);
+            infoSpan.textContent = 'Загружено ' + data.length + ' образцов.' +
+                (sameZone ? ' Пояса совпадают — время показано как есть.'
+                          : ' Пояса различаются — время пересчитано в пояс сбора.');
+            clearPlaceholder();
+            lastData = data;
+            lastReportConfig = {
+                rawCSV: csvInput.value,
+                inputOffset: inputOffset,
+                collectionOffset: collectionOffset,
+                collectionLabel: collectionLabel,
+            };
+            setExportButtonsEnabled(true);
 
             if (graphInstance) {
                 graphInstance.updateOptions({ file: data });
             } else {
-                graphInstance = new Dygraph(
-                    divGraph,
-                    data,
-                    {
-                        title: 'Температура и влажность',
-                        ylabel: 'Temp(C°)',
-                        y2label: 'H(%)',
-                        xlabel: 'Дата',
-                        showRangeSelector: true,
-                        showRoller: true,
-                        rollPeriod: 1,
-                        colors: ['green', 'blue'],
-                        series: { 'H(%)': { axis: 'y2' } },
-                        labels: ['Date', 'T(°C)', 'H(%)'],
-                        labelsDiv: labDiv,   // легенда будет в этом div
-                        legend: 'always',
-                        customBars: true,
-                        digitsAfterDecimal: 2,
-                        axisLineWidth: 0.5,
-                        gridLineWidth: 0.3,
-                        yLabelWidth: 30,
-                        rightGap: 30,
-                        titleHeight: 28,
-                        xLabelHeight: 18,
-                        axisLabelFontSize: 12,
-                        axes: {
-                            y: { axisLabelWidth: 25 },
-                            y2: { axisLabelWidth: 25 }
-                        }
-                    }
-                );
+                graphInstance = new Dygraph(divGraph, data, {
+                    title: 'Температура и влажность',
+                    ylabel: 'Temp(C°)', y2label: 'H(%)', xlabel: 'Дата',
+                    showRangeSelector: true, showRoller: true, rollPeriod: 1,
+                    colors: ['green', 'blue'],
+                    series: { 'H(%)': { axis: 'y2' } },
+                    labels: ['Date', 'T(°C)', 'H(%)'],
+                    labelsDiv: labDiv, legend: 'always', customBars: true,
+                    digitsAfterDecimal: 2,
+                    axisLineWidth: 0.5, gridLineWidth: 0.3,
+                    yLabelWidth: 30, rightGap: 30,
+                    titleHeight: 28, xLabelHeight: 18, axisLabelFontSize: 12,
+                    axes: { y: { axisLabelWidth: 25 }, y2: { axisLabelWidth: 25 } },
+                    visibility: [toggleTemp.checked, toggleHum.checked]
+                });
             }
+            applyVisibility();
         }
-
         function updateFromInput() {
-            const csv = csvInput.value;
-            const parsed = parseCSV(csv);
-            renderGraph(parsed);
+            if (!validateTimezones()) {
+                showPlaceholder('Выберите оба часовых пояса, чтобы построить график.');
+                return;
+            }
+            const inputOffset      = parseFloat(inputTzSelect.value);
+            const collectionOffset = parseFloat(collectionTzSelect.value);
+            const collectionLabel  = collectionTzSelect.options[collectionTzSelect.selectedIndex].text;
+            const parsed = parseCSV(csvInput.value, inputOffset, collectionOffset);
+            renderGraph(parsed, inputOffset, collectionOffset, collectionLabel);
         }
 
+        // ==================== ЭКСПОРТ ====================
+
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        function formatDate(dt) {
+            return dt.getFullYear() + '-' +
+                String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                String(dt.getDate()).padStart(2, '0');
+        }
+        function formatTime(dt) {
+            return String(dt.getHours()).padStart(2, '0') + ':' +
+                String(dt.getMinutes()).padStart(2, '0') + ':' +
+                String(dt.getSeconds()).padStart(2, '0');
+        }
+        function getDateRange(data) {
+            if (!data || data.length < 2) return '—';
+            return formatDate(data[0][0]) + ' — ' + formatDate(data[data.length - 1][0]);
+        }
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 0);
+        }
+
+        // --- CSV текущего вида ---
+        function exportCSV() {
+            if (!graphInstance || !lastData) return;
+            const range = graphInstance.xAxisRange();
+            const xMin = range[0], xMax = range[1];
+            const filtered = lastData.filter(row => {
+                const t = row[0].getTime();
+                return t >= xMin && t <= xMax;
+            });
+            if (filtered.length === 0) { alert('В выбранном диапазоне нет данных.'); return; }
+
+            const tempVisible = toggleTemp.checked;
+            const humVisible  = toggleHum.checked;
+
+            const lines = [];
+            const header = ['Date', 'Time'];
+            if (tempVisible) header.push('T_low', 'T_mid', 'T_high');
+            if (humVisible)  header.push('H_low', 'H_mid', 'H_high');
+            lines.push(header.join(';'));
+            filtered.forEach(row => {
+                const cells = [formatDate(row[0]), formatTime(row[0])];
+                if (tempVisible) cells.push(row[1][0], row[1][1], row[1][2]);
+                if (humVisible)  cells.push(row[2][0], row[2][1], row[2][2]);
+                lines.push(cells.join(';'));
+            });
+            downloadFile(lines.join('\r\n'), 'data.csv', 'text/csv;charset=utf-8');
+        }
+
+        // --- Генерация HTML-отчёта ---
+        function generateReportHTML(cfg) {
+            const payload = {
+                rawCSV: cfg.rawCSV,
+                inputOffset: cfg.inputOffset,
+                collectionOffset: cfg.collectionOffset,
+                title: cfg.title
+            };
+            const safeTitle = escapeHtml(cfg.title);
+            const notesHtml = cfg.notes
+                ? `<div class="meta-item notes-full"><span class="meta-label">Примечание:</span> ${escapeHtml(cfg.notes)}</div>`
+                : '';
+            return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>${safeTitle}</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        font-family: Arial, sans-serif; background: #f5f5f5; padding: 10px;
+        min-height: 100vh; display: flex; flex-direction: column; font-size: 16px;
+    }
+    .container {
+        flex: 1; background: white; padding: 20px; border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex;
+        flex-direction: column; max-width: 100%;
+    }
+    h1 { margin-bottom: 12px; font-size: 24px; }
+    .report-meta {
+        background: #f8f9fa; border-radius: 6px; border: 1px solid #e0e0e0;
+        padding: 12px 16px; margin-bottom: 16px; display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 8px 20px; font-size: 14px;
+    }
+    .meta-item { color: #444; }
+    .meta-label { font-weight: 600; color: #222; }
+    .notes-full { grid-column: 1 / -1; }
+    .series-toggles {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 20px;
+        margin-bottom: 12px; padding: 10px 14px; background: #f8f9fa;
+        border-radius: 6px; border: 1px solid #e0e0e0;
+    }
+    .toggles-label { font-size: 14px; font-weight: 600; color: #333; }
+    .series-toggle {
+        display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+        font-size: 14px; user-select: none; padding: 4px 10px; border-radius: 4px;
+    }
+    .series-toggle:hover { background: #eef0f3; }
+    .series-toggle input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; margin: 0; }
+    .series-toggle .color-swatch { display: inline-block; width: 22px; height: 3px; border-radius: 2px; }
+    .series-toggle.temp .color-swatch { background: green; }
+    .series-toggle.hum  .color-swatch { background: blue; }
+    #div_v {
+        flex: 1; width: 100%; min-height: 400px;
+        height: calc(100vh - 380px); position: relative; overflow: visible;
+    }
+    #labdiv { margin-top: 10px; text-align: center; font-size: 16px; }
+    .dygraph-legend {
+        position: static !important; display: inline-block;
+        background: transparent !important; border: none; padding: 0 !important;
+        font-size: 16px !important;
+    }
+    .dygraph-legend > span { margin-right: 15px !important; white-space: nowrap; }
+    .dygraph-legend-line {
+        display: inline-block; width: 25px !important; height: 2px !important;
+        margin-right: 5px !important; vertical-align: middle; border-bottom: 2px solid;
+    }
+    .dygraph-label.dygraph-xlabel {
+        position: absolute !important; left: 50% !important;
+        transform: translateX(-50%) !important; text-align: center; width: auto !important;
+    }
+    .dygraph-roller {
+        position: absolute !important; bottom: 10px !important; right: 10px !important;
+        top: auto !important; left: auto !important; z-index: 10;
+    }
+    .dygraph-label.dygraph-ylabel  { left: 5px !important; text-align: left !important; }
+    .dygraph-label.dygraph-y2label { right: 5px !important; text-align: right !important; }
+    .dygraph-axis-label-y  { padding-left: 2px !important; }
+    .dygraph-axis-label-y2 { padding-right: 2px !important; }
+    .report-actions { margin-top: 12px; display: flex; justify-content: center; gap: 10px; }
+    .report-actions button {
+        padding: 8px 20px; background: #4CAF50; color: white; border: none;
+        border-radius: 4px; cursor: pointer; font-size: 14px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+    .report-actions button:hover { background: #388E3C; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>${safeTitle}</h1>
+    <div class="report-meta">
+        <div class="meta-item"><span class="meta-label">Датчик:</span> Xiaomi Mijia LYWSD03MMC</div>
+        <div class="meta-item"><span class="meta-label">Пояс сбора:</span> ${escapeHtml(cfg.collectionLabel)}</div>
+        <div class="meta-item"><span class="meta-label">Записей:</span> ${cfg.recordCount}</div>
+        <div class="meta-item"><span class="meta-label">Период:</span> ${escapeHtml(cfg.dateRange)}</div>
+        ${notesHtml}
+    </div>
+    <div class="series-toggles">
+        <span class="toggles-label">Отображать:</span>
+        <label class="series-toggle temp">
+            <input type="checkbox" id="toggleTemp" checked>
+            <span class="color-swatch"></span><span>Температура</span>
+        </label>
+        <label class="series-toggle hum">
+            <input type="checkbox" id="toggleHum" checked>
+            <span class="color-swatch"></span><span>Влажность</span>
+        </label>
+    </div>
+    <div id="div_v"></div>
+    <div id="labdiv"></div>
+    <div class="report-actions">
+        <button id="btnExportCsv">📊 Скачать CSV (текущий вид)</button>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.1.0/dygraph.min.js"><\/script>
+<script>
+(function() {
+    var CONFIG = ${JSON.stringify(payload)};
+    var divGraph = document.getElementById('div_v');
+    var labDiv = document.getElementById('labdiv');
+    var toggleTemp = document.getElementById('toggleTemp');
+    var toggleHum = document.getElementById('toggleHum');
+    var btnExportCsv = document.getElementById('btnExportCsv');
+    var graphInstance = null;
+    var lastData = null;
+
+    function getBrowserOffsetHours() { return -new Date().getTimezoneOffset() / 60; }
+    function parseCSV(csvText, inputOffset, collectionOffset) {
+        var lines = csvText.split(/\\r?\\n/).filter(function(l) { return l.trim() !== ''; });
+        if (lines.length < 2) return [];
+        var H = 3600000;
+        var browserOffset = getBrowserOffsetHours();
+        var shiftMs = (collectionOffset - inputOffset - browserOffset) * H;
+        var result = [];
+        for (var i = 1; i < lines.length; i++) {
+            var cols = lines[i].split(';');
+            if (cols.length < 5) continue;
+            var rawMs = parseInt(cols[0], 10);
+            if (isNaN(rawMs)) continue;
+            var t1 = parseFloat(cols[1]), t2 = parseFloat(cols[2]);
+            var h1 = parseFloat(cols[3]), h2 = parseFloat(cols[4]);
+            if (isNaN(t1) || isNaN(t2) || isNaN(h1) || isNaN(h2)) continue;
+            var correctedMs = rawMs + shiftMs;
+            var tempLow = Math.min(t1, t2), tempHigh = Math.max(t1, t2), tempMid = (t1 + t2) / 2;
+            var humLow  = Math.min(h1, h2), humHigh  = Math.max(h1, h2), humMid  = (h1 + h2) / 2;
+            result.push([new Date(correctedMs), [tempLow, tempMid, tempHigh], [humLow, humMid, humHigh]]);
+        }
+        return result;
+    }
+    function applyVisibility() {
+        if (!graphInstance) return;
+        var vis = [toggleTemp.checked, toggleHum.checked];
+        if (!vis[0] && !vis[1]) {
+            if (document.activeElement === toggleTemp) toggleTemp.checked = true;
+            else toggleHum.checked = true;
+            vis[0] = toggleTemp.checked; vis[1] = toggleHum.checked;
+        }
+        graphInstance.setVisibility(0, vis[0]);
+        graphInstance.setVisibility(1, vis[1]);
+    }
+    function formatDate(dt) {
+        return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
+    }
+    function formatTime(dt) {
+        return String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0') + ':' + String(dt.getSeconds()).padStart(2,'0');
+    }
+    function downloadFile(content, filename, mimeType) {
+        var blob = new Blob([content], { type: mimeType });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function() { URL.revokeObjectURL(url); }, 0);
+    }
+    function exportCSV() {
+        if (!graphInstance || !lastData) return;
+        var range = graphInstance.xAxisRange();
+        var filtered = lastData.filter(function(row) {
+            var t = row[0].getTime();
+            return t >= range[0] && t <= range[1];
+        });
+        if (filtered.length === 0) { alert('В выбранном диапазоне нет данных.'); return; }
+        var tempVisible = toggleTemp.checked, humVisible = toggleHum.checked;
+        var lines = [], header = ['Date', 'Time'];
+        if (tempVisible) header.push('T_low', 'T_mid', 'T_high');
+        if (humVisible)  header.push('H_low', 'H_mid', 'H_high');
+        lines.push(header.join(';'));
+        filtered.forEach(function(row) {
+            var cells = [formatDate(row[0]), formatTime(row[0])];
+            if (tempVisible) cells.push(row[1][0], row[1][1], row[1][2]);
+            if (humVisible)  cells.push(row[2][0], row[2][1], row[2][2]);
+            lines.push(cells.join(';'));
+        });
+        downloadFile(lines.join('\\r\\n'), 'data.csv', 'text/csv;charset=utf-8');
+    }
+
+    lastData = parseCSV(CONFIG.rawCSV, CONFIG.inputOffset, CONFIG.collectionOffset);
+    graphInstance = new Dygraph(divGraph, lastData, {
+        title: CONFIG.title,
+        ylabel: 'Temp(C°)', y2label: 'H(%)', xlabel: 'Дата',
+        showRangeSelector: true, showRoller: true, rollPeriod: 1,
+        colors: ['green', 'blue'],
+        series: { 'H(%)': { axis: 'y2' } },
+        labels: ['Date', 'T(°C)', 'H(%)'],
+        labelsDiv: labDiv, legend: 'always', customBars: true,
+        digitsAfterDecimal: 2,
+        axisLineWidth: 0.5, gridLineWidth: 0.3,
+        yLabelWidth: 30, rightGap: 30,
+        titleHeight: 28, xLabelHeight: 18, axisLabelFontSize: 12,
+        axes: { y: { axisLabelWidth: 25 }, y2: { axisLabelWidth: 25 } },
+        visibility: [toggleTemp.checked, toggleHum.checked]
+    });
+    toggleTemp.addEventListener('change', applyVisibility);
+    toggleHum.addEventListener('change', applyVisibility);
+    btnExportCsv.addEventListener('click', exportCSV);
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() { if (graphInstance) graphInstance.resize(); }, 100);
+    });
+})();
+<\/script>
+</body>
+</html>`;
+        }
+
+        function exportReport() {
+            if (!lastReportConfig || !lastData) return;
+            const title = reportTitleInput.value.trim() || 'Метеорологический отчёт';
+            const notes = reportNotesInput.value.trim();
+            const html = generateReportHTML({
+                rawCSV: lastReportConfig.rawCSV,
+                inputOffset: lastReportConfig.inputOffset,
+                collectionOffset: lastReportConfig.collectionOffset,
+                collectionLabel: lastReportConfig.collectionLabel,
+                title: title,
+                notes: notes,
+                recordCount: lastData.length,
+                dateRange: getDateRange(lastData),
+            });
+            downloadFile(html, 'report.html', 'text/html;charset=utf-8');
+        }
+
+        // --- Инициализация ---
         window.addEventListener('DOMContentLoaded', function() {
-            updateFromInput();
+            populateTimezones();
+            showBrowserHint();
+            showPlaceholder('Выберите оба часовых пояса, чтобы построить график.');
+
             btnUpdate.addEventListener('click', updateFromInput);
+            inputTzSelect.addEventListener('change', updateFromInput);
+            collectionTzSelect.addEventListener('change', updateFromInput);
+            toggleTemp.addEventListener('change', applyVisibility);
+            toggleHum.addEventListener('change', applyVisibility);
+            btnExportReport.addEventListener('click', exportReport);
+            btnExportCsv.addEventListener('click', exportCSV);
         });
 
         let resizeTimer;
         window.addEventListener('resize', function() {
             clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(function() {
-                if (graphInstance) {
-                    graphInstance.resize();
-                }
-            }, 100);
+            resizeTimer = setTimeout(() => { if (graphInstance) graphInstance.resize(); }, 100);
         });
 
     })();
